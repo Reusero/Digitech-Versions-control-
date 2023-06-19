@@ -1,7 +1,6 @@
 # Digitech-Versions-control-
-Digitech Versions control 
 
-Version 1 test code
+Version 1 test code for green house project
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
