@@ -1,0 +1,52 @@
+The New code controls a fan relay to maintain the temperature below a certain threshold. 
+The relay pins are used to turn the devices on and off based on sensor readings, which 
+makes a healthy plant growth and temperature regulation.
+ By using relays to control the water pump and fan, the 
+code ensures that these devices are only active when needed. 
+This promotes energy efficiency by preventing unnecessary 
+usage and reducing electricity consumption.
+
+
+#include <dht11.h>
+
+#define RELAY_PIN 5       // Water Pump Relay
+#define FAN_RELAY_PIN 6   // Fan Relay
+#define MOISTURE_SIGNAL A5 // Soil Moisture Sensor
+#define DHT11PIN 9        // DHT11 Sensor
+
+dht11 DHT11;
+
+void setup() {
+  pinMode(RELAY_PIN, OUTPUT);
+  pinMode(FAN_RELAY_PIN, OUTPUT); // Initialize fan relay pin
+  Serial.begin(9600);             // Start the serial communication
+}
+
+void loop() {
+  int Moisture = analogRead(MOISTURE_SIGNAL);
+  Serial.print("Soil Moisture Level: ");
+  Serial.println(Moisture);
+
+  if (Moisture > 860) {
+    digitalWrite(RELAY_PIN, HIGH); // Turn on pump
+    delay(3000);                   // Pump runs for 3 seconds
+    digitalWrite(RELAY_PIN, LOW);  // Turn off pump
+    delay(3000);                   // Pause for 3 seconds before the next reading
+  }
+
+  DHT11.read(DHT11PIN);
+
+  Serial.print("Humidity (%): ");
+  Serial.println((float)DHT11.humidity, 2);
+
+  Serial.print("Temperature (C): ");
+  Serial.println((float)DHT11.temperature, 2);
+
+  if (DHT11.temperature > 30.0) { // Check if temperature is greater than 30 degrees Celsius
+    digitalWrite(FAN_RELAY_PIN, HIGH); // Turn on fan
+  } else {
+    digitalWrite(FAN_RELAY_PIN, LOW); // Turn off fan
+  }
+
+  delay(200); // Delay before the next moisture and temperature reading
+}
