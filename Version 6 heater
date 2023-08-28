@@ -1,0 +1,81 @@
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+#include <dht11.h>
+
+#define RELAY_PIN 5       // Water Pump Relay
+#define FAN_RELAY_PIN 6   // Fan Relay
+#define MOISTURE_SIGNAL A1 // Soil Moisture Sensor
+#define DHT11PIN 9        // DHT11 Sensor
+#define HEATER_PIN 3      // Heater Relay
+
+dht11 DHT11;
+
+void setup() {
+  pinMode(RELAY_PIN, OUTPUT);
+  pinMode(FAN_RELAY_PIN, OUTPUT); // Initialize fan relay pin
+  pinMode(HEATER_PIN, OUTPUT);    // Initialize heater relay pin
+  lcd.init();
+  lcd.clear();
+  lcd.backlight();
+
+  lcd.setCursor(0, 0);
+  lcd.print("T=");
+
+  lcd.setCursor(2, 1);
+  lcd.print("Humid=");
+
+  Serial.begin(9600); // Start the serial communication
+}
+
+void loop() {
+  int Moisture = analogRead(MOISTURE_SIGNAL);
+  Serial.print("Soil Moisture Level: ");
+  Serial.println(Moisture);
+  lcd.setCursor(7, 0);
+  lcd.print("SM=");
+  lcd.setCursor(9, 0);
+  lcd.print(Moisture);
+
+  if (Moisture > 900) {
+    digitalWrite(RELAY_PIN, HIGH); // Turn on pump
+  } else {
+    digitalWrite(RELAY_PIN, LOW); // Turn off pump
+  }
+
+  DHT11.read(DHT11PIN);
+
+  Serial.print("Humidity (%): ");
+  Serial.println((float)DHT11.humidity, 2);
+
+  Serial.print("Temperature (C): ");
+  Serial.println((float)DHT11.temperature, 2);
+
+  lcd.setCursor(8, 1);
+  lcd.print(DHT11.humidity);
+  Serial.print("Current humidity = ");
+  Serial.print(DHT11.humidity);
+  Serial.print("%  ");
+  lcd.print("%");
+
+  lcd.setCursor(2, 0);
+  lcd.print(DHT11.temperature);
+  Serial.print("Temperature = ");
+  Serial.print(DHT11.temperature);
+  lcd.print("C"); // Clear the previous temperature value
+
+  if (DHT11.temperature > 30.0) {
+    digitalWrite(FAN_RELAY_PIN, HIGH); // Turn on fan
+  } else {
+    digitalWrite(FAN_RELAY_PIN, LOW); // Turn off fan
+  }
+
+  // Control the heater based on your desired conditions.
+  if (DHT11.temperature < 20.0) {
+    digitalWrite(HEATER_PIN, HIGH); // Turn on heater
+  } else {
+    digitalWrite(HEATER_PIN, LOW); // Turn off heater
+  }
+
+  delay(2000); // Delay for 2 seconds before the next moisture and temperature reading
+}
