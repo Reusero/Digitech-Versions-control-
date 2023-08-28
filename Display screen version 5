@@ -1,5 +1,7 @@
 the LCD is used to provide a visual interface for monitoring temperature, humidity, and soil moisture levels. 
 It displays these values in real-time on the screen, making it easier to observe and control your environmental monitoring system.
+
+
 #include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
@@ -9,12 +11,15 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 #define FAN_RELAY_PIN 6   // Fan Relay
 #define MOISTURE_SIGNAL A1 // Soil Moisture Sensor
 #define DHT11PIN 9        // DHT11 Sensor
+#define HEATER_PIN 3      // Heater Relay
+int moistureInPercent;
 
 dht11 DHT11;
 
 void setup() {
   pinMode(RELAY_PIN, OUTPUT);
   pinMode(FAN_RELAY_PIN, OUTPUT); // Initialize fan relay pin
+  pinMode(HEATER_PIN, OUTPUT);    // Initialize heater relay pin
   lcd.init();
   lcd.clear();
   lcd.backlight();
@@ -33,9 +38,14 @@ void loop() {
   Serial.print("Soil Moisture Level: ");
   Serial.println(Moisture);
   lcd.setCursor(7, 0);
-  lcd.print("SM=");
+  lcd.print("S=");
   lcd.setCursor(9, 0);
-  lcd.print(Moisture);
+  lcd.print(moistureInPercent);
+  lcd.print("% ");
+
+  moistureInPercent = (Moisture/10);
+
+
 
   if (Moisture > 900) {
     digitalWrite(RELAY_PIN, HIGH); // Turn on pump
@@ -70,7 +80,12 @@ void loop() {
     digitalWrite(FAN_RELAY_PIN, LOW); // Turn off fan
   }
 
+  // Control the heater based on your desired conditions.
+  if (DHT11.temperature < 20.0) {
+    digitalWrite(HEATER_PIN, HIGH); // Turn on heater
+  } else {
+    digitalWrite(HEATER_PIN, LOW); // Turn off heater
+  }
+
   delay(2000); // Delay for 2 seconds before the next moisture and temperature reading
 }
-
-
