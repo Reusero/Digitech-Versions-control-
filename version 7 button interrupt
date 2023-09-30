@@ -1,3 +1,17 @@
+The provided code is important to a greenhouse because it helps automate and control the greenhouse environment, ensuring optimal conditions for plant growth. 
+Specifically, it uses a button interrupt feature to enhance user interaction with the greenhouse monitoring system. Here's an explanation of how the button code works:
+Button Pin Configuration: The code assigns a pin for a physical button (BUTTON_PIN) in the setup section. This button allows greenhouse operators or users to manually interact with the monitoring system.
+Input Pull-Up Configuration: The button pin is configured as an input with an internal pull-up resistor (INPUT_PULLUP). This setup ensures that the pin is normally pulled high (at 5V) when the button is not pressed.
+When the button is pressed, it connects the pin to ground (0V). Button Press Detection: In the loop section, the code continuously checks the state of the button pin using digitalRead(BUTTON_PIN). 
+If the button is pressed (i.e., its state is LOW because of the pull-up resistor), the code considers this as a button press event.
+LCD and Backlight Control: When the button is pressed, the code reacts by turning on the LCD display (lcd.display()) and its backlight (lcd.backlight()). It then waits for 10 seconds (delay(10000)) with both the LCD and backlight on.
+This allows the user to read the current sensor data on the display. Turning Off the Display: After 10 seconds, the code turns off the display (lcd.noDisplay()) and the backlight (lcd.noBacklight()) to conserve power. 
+This is done to prevent unnecessary power consumption when the display is not actively being used.
+Button State Tracking: The code keeps track of whether the button was pressed using the buttonPressed variable. This variable is set to true when the button is pressed and false when it is not.
+In summary, the button interrupt functionality in the code allows greenhouse operators to manually activate the LCD display and backlight for a short period when needed. 
+This feature is valuable for quick checks and monitoring without the need to keep the display continuously on, which helps save power and prolong the life of the display in a greenhouse setting.
+
+
 #include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
