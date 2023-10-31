@@ -13,104 +13,118 @@ This feature is valuable for quick checks and monitoring without the need to kee
 
 
 #include <LiquidCrystal_I2C.h>
-LiquidCrystal_I2C lcd(0x27, 16, 2);
-
 #include <dht11.h>
 
-const int RELAY_PIN = 5;       // Water Pump Relay
-const int FAN_RELAY_PIN = 6;   // Fan Relay
-const int MOISTURE_SIGNAL = A1; // Soil Moisture Sensor
-const int DHT11PIN = 9;        // DHT11 Sensor
-const int HEATER_PIN = 3;      // Heater Relay
-const int BUTTON_PIN = 2;      // Button Pin
-int moistureInPercent;
+// Pin Definitions
+const int RELAY_PIN = 5;       // Water Pump Relay v3
+const int FAN_RELAY_PIN = 6;   // Fan Relay v4
+const int MOISTURE_SIGNAL = A1; // Soil Moisture Sensor v1
+const int DHT11PIN = 9;        // DHT11 Sensor v2
+const int HEATER_PIN = 3;      // Heater Relay v6
+const int BUTTON_PIN = 2;      // Button Pin v7
 
+// Global Variables
+LiquidCrystal_I2C lcd(0x27, 16, 2); // Initialize the LCD screen with I2C address 0x27 and dimensions 16x2
 dht11 DHT11;
-bool lcdOn = true;  // Track whether the LCD is currently on
-bool buttonPressed = false;  // Track button state
+bool lcdOn = true; // Track whether the LCD is currently on
+bool buttonPressed = false; // Track the button state
+int moistureInPercent; // Declare a variable to store moisture percentage
+
+// Function Declarations
+void setup();
+void loop();
+void readSensors();
+void controlRelays();
 
 void setup() {
-  pinMode(RELAY_PIN, OUTPUT);
-  pinMode(FAN_RELAY_PIN, OUTPUT);
-  pinMode(HEATER_PIN, OUTPUT);
-  pinMode(BUTTON_PIN, INPUT_PULLUP);  // Use internal pull-up resistor for the button
-  lcd.init();
-  lcd.clear();
-  lcd.noDisplay();
-  
-  lcd.setCursor(0, 0);
-  lcd.print("T=");
+  pinMode(RELAY_PIN, OUTPUT);       // Set RELAY_PIN as an output
+  pinMode(FAN_RELAY_PIN, OUTPUT);   // Set FAN_RELAY_PIN as an output
+  pinMode(HEATER_PIN, OUTPUT);     // Set HEATER_PIN as an output
+  pinMode(BUTTON_PIN, INPUT_PULLUP); // Set BUTTON_PIN as an input with a pull-up resistor
 
-  lcd.setCursor(2, 1);
-  lcd.print("Humid=");
+  lcd.init();       // Initialize the LCD
+  lcd.clear();      // Clear the LCD screen
+  lcd.noDisplay();  // Turn off the LCD display
 
-  Serial.begin(9600);
+  lcd.setCursor(0, 0);  // Set the LCD cursor to the first row, first column
+  lcd.print("T=");     // Print "T=" on the LCD
+
+  lcd.setCursor(2, 1);  // Set the cursor to the second row, third column
+  lcd.print("Humid=");  // Print "Humid=" on the LCD
+
+  Serial.begin(9600);  // Initialize serial communication at 9600 baud
 }
 
 void loop() {
-  int Moisture = analogRead(MOISTURE_SIGNAL);
-  Serial.print("Soil Moisture Level: ");
-  Serial.println(Moisture);
+  readSensors();     // Read sensor values
+  controlRelays();   // Control relays based on sensor values
+  delay(2000);       // Delay for 2 seconds before the next iteration
+}
+
+void readSensors() {
+  int Moisture = analogRead(MOISTURE_SIGNAL);  // Read soil moisture level from the analog pin
+  Serial.print("Soil Moisture Level: ");     // Print a message to the serial monitor
+  Serial.println(Moisture);                // Print the moisture value
 
   // Check if the button is pressed
-  if (digitalRead(BUTTON_PIN) == LOW) {
-    buttonPressed = true;
-    lcdOn = true;  // Turn on the LCD
-    lcd.display(); // Turn on the display
-    lcd.backlight(); // Turn on the Backlight
-    delay(10000); // Wait for 10 seconds with the LCD and backlight on
-    lcd.noDisplay(); // Turn off the display
-    lcd.noBacklight(); // Turn off the Backlight
+  if (digitalRead(BUTTON_PIN) == LOW) {  // If the button is pressed (LOW), enter this block
+    buttonPressed = true;         // Set the buttonPressed flag to true
+    lcdOn = true;                // Turn on the LCD
+    lcd.display();               // Turn on the LCD display
+    lcd.backlight();            // Turn on the backlight
+    delay(10000);               // Wait for 10 seconds with the LCD and backlight on
+    lcd.noDisplay();            // Turn off the LCD display
+    lcd.noBacklight();          // Turn off the backlight
   } else {
-    buttonPressed = false;
+    buttonPressed = false;      // If the button is not pressed, set the flag to false
   }
 
-  lcd.setCursor(7, 0);
-  lcd.print("S=");
-  lcd.setCursor(9, 0);
-  lcd.print(moistureInPercent);
-  lcd.print("% ");
+  lcd.setCursor(7, 0);          // Set the cursor to the first row, eighth column
+  lcd.print("S=");             // Print "S=" on the LCD
+  lcd.setCursor(9, 0);          // Set the cursor to the first row, tenth column
+  lcd.print(moistureInPercent); // Print the moisture percentage
+  lcd.print("% ");              // Print a percentage sign
 
-  moistureInPercent = (Moisture / 10);
+  moistureInPercent = (Moisture / 10);  // Calculate moisture percentage from the sensor value
 
-  if (Moisture > 900) {
-    digitalWrite(RELAY_PIN, HIGH);
+  DHT11.read(DHT11PIN);  // Read temperature and humidity from the DHT11 sensor
+
+  Serial.print("Humidity (%): ");  // Print a message to the serial monitor
+  Serial.println((float)DHT11.humidity, 2);  // Print humidity value with 2 decimal places
+
+  Serial.print("Temperature (C): ");  // Print a message to the serial monitor
+  Serial.println((float)DHT11.temperature, 2);  // Print temperature value with 2 decimal places
+
+  lcd.setCursor(8, 1);             // Set the cursor to the second row, ninth column
+  lcd.print(DHT11.humidity);       // Print humidity on the LCD
+  Serial.print("Current humidity = ");  // Print a message to the serial monitor
+  Serial.print(DHT11.humidity);        // Print humidity value
+  Serial.print("%  ");                // Print a percentage sign on the serial monitor
+  lcd.print("%");                     // Print a percentage sign on the LCD
+
+  lcd.setCursor(2, 0);               // Set the cursor to the first row, third column
+  lcd.print(DHT11.temperature);      // Print temperature on the LCD
+  Serial.print("Temperature = ");    // Print a message to the serial monitor
+  Serial.print(DHT11.temperature);   // Print temperature value
+  lcd.print("C");                   // Print "C" for Celsius on the LCD
+}
+
+void controlRelays() {
+  if (moistureInPercent > 90) {  // If moisture percentage is greater than 90%
+    digitalWrite(RELAY_PIN, HIGH);  // Turn on the water pump relay
   } else {
-    digitalWrite(RELAY_PIN, LOW);
+    digitalWrite(RELAY_PIN, LOW);   // Turn off the water pump relay
   }
 
-  DHT11.read(DHT11PIN);
-
-  Serial.print("Humidity (%): ");
-  Serial.println((float)DHT11.humidity, 2);
-
-  Serial.print("Temperature (C): ");
-  Serial.println((float)DHT11.temperature, 2);
-
-  lcd.setCursor(8, 1);
-  lcd.print(DHT11.humidity);
-  Serial.print("Current humidity = ");
-  Serial.print(DHT11.humidity);
-  Serial.print("%  ");
-  lcd.print("%");
-
-  lcd.setCursor(2, 0);
-  lcd.print(DHT11.temperature);
-  Serial.print("Temperature = ");
-  Serial.print(DHT11.temperature);
-  lcd.print("C");
-
-  if (DHT11.temperature > 30.0) {
-    digitalWrite(FAN_RELAY_PIN, HIGH);
+  if (DHT11.temperature > 30.0) {  // If temperature is greater than 30.0 degrees Celsius
+    digitalWrite(FAN_RELAY_PIN, HIGH);  // Turn on the fan relay
   } else {
-    digitalWrite(FAN_RELAY_PIN, LOW);
+    digitalWrite(FAN_RELAY_PIN, LOW);   // Turn off the fan relay
   }
 
-  if (DHT11.temperature < 20.0) {
-    digitalWrite(HEATER_PIN, HIGH);
+  if (DHT11.temperature < 20.0) {  // If temperature is less than 20.0 degrees Celsius
+    digitalWrite(HEATER_PIN, HIGH);  // Turn on the heater relay
   } else {
-    digitalWrite(HEATER_PIN, LOW);
+    digitalWrite(HEATER_PIN, LOW);   // Turn off the heater relay
   }
-
-  delay(2000);
 }
