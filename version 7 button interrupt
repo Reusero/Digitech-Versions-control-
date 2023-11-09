@@ -11,30 +11,24 @@ Button State Tracking: The code keeps track of whether the button was pressed us
 In summary, the button interrupt functionality in the code allows greenhouse operators to manually activate the LCD display and backlight for a short period when needed. 
 This feature is valuable for quick checks and monitoring without the need to keep the display continuously on, which helps save power and prolong the life of the display in a greenhouse setting.
 
-
 #include <LiquidCrystal_I2C.h>
 #include <dht11.h>
 
+// Global Variables
+LiquidCrystal_I2C lcd(0x27, 16, 2); // Initialize the LCD screen with I2C address 0x27 and dimensions 16x2
+dht11 DHT11;
+
 // Pin Definitions
+int screenState = false;
 const int RELAY_PIN = 5;       // Water Pump Relay v3
 const int FAN_RELAY_PIN = 6;   // Fan Relay v4
 const int MOISTURE_SIGNAL = A1; // Soil Moisture Sensor v1
 const int DHT11PIN = 9;        // DHT11 Sensor v2
 const int HEATER_PIN = 3;      // Heater Relay v6
 const int BUTTON_PIN = 2;      // Button Pin v7
-
-// Global Variables
-LiquidCrystal_I2C lcd(0x27, 16, 2); // Initialize the LCD screen with I2C address 0x27 and dimensions 16x2
-dht11 DHT11;
 bool lcdOn = true; // Track whether the LCD is currently on
 bool buttonPressed = false; // Track the button state
 int moistureInPercent; // Declare a variable to store moisture percentage
-
-// Function Declarations
-void setup();
-void loop();
-void readSensors();
-void controlRelays();
 
 void setup() {
   pinMode(RELAY_PIN, OUTPUT);       // Set RELAY_PIN as an output
@@ -52,6 +46,7 @@ void setup() {
   lcd.setCursor(2, 1);  // Set the cursor to the second row, third column
   lcd.print("Humid=");  // Print "Humid=" on the LCD
 
+  attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), ToggleLcd, RISING);
   Serial.begin(9600);  // Initialize serial communication at 9600 baud
 }
 
@@ -59,6 +54,13 @@ void loop() {
   readSensors();     // Read sensor values
   controlRelays();   // Control relays based on sensor values
   delay(2000);       // Delay for 2 seconds before the next iteration
+  if (screenState) {
+    lcd.display();
+    lcd.backlight();
+  } else {
+    lcd.noDisplay();
+    lcd.noBacklight();
+  }
 }
 
 void readSensors() {
@@ -67,18 +69,6 @@ void readSensors() {
   Serial.println(Moisture);                // Print the moisture value
 
   // Check if the button is pressed
-  if (digitalRead(BUTTON_PIN) == LOW) {  // If the button is pressed (LOW), enter this block
-    buttonPressed = true;         // Set the buttonPressed flag to true
-    lcdOn = true;                // Turn on the LCD
-    lcd.display();               // Turn on the LCD display
-    lcd.backlight();            // Turn on the backlight
-    delay(10000);               // Wait for 10 seconds with the LCD and backlight on
-    lcd.noDisplay();            // Turn off the LCD display
-    lcd.noBacklight();          // Turn off the backlight
-  } else {
-    buttonPressed = false;      // If the button is not pressed, set the flag to false
-  }
-
   lcd.setCursor(7, 0);          // Set the cursor to the first row, eighth column
   lcd.print("S=");             // Print "S=" on the LCD
   lcd.setCursor(9, 0);          // Set the cursor to the first row, tenth column
@@ -127,4 +117,8 @@ void controlRelays() {
   } else {
     digitalWrite(HEATER_PIN, LOW);   // Turn off the heater relay
   }
+}
+
+void ToggleLcd() {
+  screenState = !screenState;
 }
